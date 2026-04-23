@@ -1,0 +1,10 @@
+{
+  "task_id": "09a82f48-2d79-487d-bdde-2e972ce5c079",
+  "worker": "nikvorobiov",
+  "status": "error",
+  "result_branch": null,
+  "tokens_used": 0,
+  "summary": "Command '['git', 'clone']' returned non-zero exit status 128.",
+  "completed_at": "2026-04-23T19:33:07.479541+00:00",
+  "error": "Command '['git', 'clone']' returned non-zero exit status 128."
+}
