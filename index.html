@@ -1,10 +1,518 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Hello World</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tauke · Workers & Tasks</title>
+<style>
+  :root {
+    --bg: #0e1014;
+    --panel: #15181f;
+    --panel-2: #1b1f28;
+    --border: #262b36;
+    --border-soft: #1f232c;
+    --text: #e6e8ee;
+    --muted: #8c93a4;
+    --muted-2: #626a7a;
+    --accent: #7cc4ff;
+    --green: #5dd39e;
+    --amber: #f2b96b;
+    --red: #ef6f6c;
+    --violet: #b69af5;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.45;
+    min-height: 100vh;
+    padding: 28px clamp(16px, 4vw, 56px) 64px;
+  }
+
+  header.top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 18px;
+    margin-bottom: 26px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  header.top h1 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  header.top .brand-mark {
+    color: var(--accent);
+    font-family: var(--mono);
+    margin-right: 8px;
+  }
+  header.top .snapshot {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+
+  section { margin-bottom: 40px; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-head h2 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  .section-head .meta {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted-2);
+  }
+
+  /* ------- Worker cards ------- */
+  .worker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .worker {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 16px 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .worker::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--muted-2);
+  }
+  .worker.online::before { background: var(--green); }
+  .worker-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .worker-handle {
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+  }
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .status-chip::before {
+    content: "";
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--muted-2);
+  }
+  .status-chip.online { color: var(--green); border-color: rgba(93,211,158,0.25); }
+  .status-chip.online::before { background: var(--green); box-shadow: 0 0 0 3px rgba(93,211,158,0.12); }
+  .status-chip.offline { color: var(--muted); }
+
+  .worker-meta {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .token-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .token-row .big {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .token-row .cap {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .token-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted-2);
+    margin-bottom: 4px;
+  }
+
+  .meter {
+    height: 6px;
+    background: var(--panel-2);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border-soft);
+  }
+  .meter > .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--violet));
+    transition: width 0.3s ease;
+  }
+  .meter-legend {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+  }
+
+  /* ------- Task table ------- */
+  .tasks-wrap {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--panel);
+  }
+  .filters {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--panel-2);
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    font: inherit;
+    font-size: 11.5px;
+    font-family: var(--mono);
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .filter-btn:hover { color: var(--text); border-color: var(--muted-2); }
+  .filter-btn.active {
+    color: var(--text);
+    background: var(--panel);
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px rgba(124,196,255,0.18);
+  }
+  .filter-count {
+    color: var(--muted-2);
+    margin-left: 6px;
+  }
+
+  table.tasks {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.tasks thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--panel-2);
+  }
+  table.tasks tbody tr {
+    border-bottom: 1px solid var(--border-soft);
+    transition: background 0.08s ease;
+  }
+  table.tasks tbody tr:last-child { border-bottom: none; }
+  table.tasks tbody tr:hover { background: rgba(255,255,255,0.015); }
+  table.tasks td {
+    padding: 12px;
+    vertical-align: top;
+  }
+  table.tasks td.id { font-family: var(--mono); font-size: 12px; color: var(--accent); white-space: nowrap; }
+  table.tasks td.worker { font-family: var(--mono); font-size: 12px; color: var(--text); white-space: nowrap; }
+  table.tasks td.prompt {
+    color: var(--text);
+    max-width: 420px;
+  }
+  table.tasks td.prompt .summary {
+    display: block;
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  table.tasks td.prompt .summary.err { color: var(--red); font-family: var(--mono); font-size: 11px; }
+  table.tasks td.when { font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+  table.tasks td.tokens { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--muted);
+  }
+  .pill::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .pill.completed   { color: var(--green); border-color: rgba(93,211,158,0.25); }
+  .pill.in_progress { color: var(--amber); border-color: rgba(242,185,107,0.3); }
+  .pill.error       { color: var(--red);   border-color: rgba(239,111,108,0.3); }
+  .pill.pending     { color: var(--muted); }
+
+  .empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted-2);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  footer.bottom {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-soft);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted-2);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
 </head>
 <body>
-    <h1>Hello, World!</h1>
+
+<header class="top">
+  <h1><span class="brand-mark">∴</span>tauke · workers &amp; tasks</h1>
+  <span class="snapshot" id="snapshot"></span>
+</header>
+
+<section>
+  <div class="section-head">
+    <h2>Connected Workers</h2>
+    <span class="meta" id="worker-meta"></span>
+  </div>
+  <div class="worker-grid" id="worker-grid"></div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>Task History</h2>
+    <span class="meta" id="task-meta"></span>
+  </div>
+  <div class="tasks-wrap">
+    <div class="filters" id="filters"></div>
+    <table class="tasks">
+      <thead>
+        <tr>
+          <th style="width: 110px">ID</th>
+          <th style="width: 130px">Status</th>
+          <th style="width: 140px">Worker</th>
+          <th>Prompt / Result</th>
+          <th style="width: 90px; text-align: right">Tokens</th>
+          <th style="width: 120px">Created</th>
+          <th style="width: 120px">Completed</th>
+        </tr>
+      </thead>
+      <tbody id="task-body"></tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none">No tasks match this filter.</div>
+  </div>
+</section>
+
+<footer class="bottom">
+  <span>Snapshot from <code>tauke status</code> + <code>tauke log -a</code> · coord branch <code>tauke-coord</code></span>
+  <span>Refresh with <code>tauke status</code> to update</span>
+</footer>
+
+<script id="workers-data" type="application/json">
+[
+  {"handle":"bushaev","status":"online","tokens_used":0,"daily_cap":50000,"remaining":50000,"last_seen":"29s ago"},
+  {"handle":"nikvorobiov","status":"offline","tokens_used":0,"daily_cap":50000,"remaining":50000,"last_seen":"17m ago"},
+  {"handle":"royalefarfalle","status":"offline","tokens_used":0,"daily_cap":50000,"remaining":50000,"last_seen":"51m ago"}
+]
+</script>
+
+<script id="tasks-data" type="application/json">
+[{"id": "1e9cd2c5-52a0-44b4-a8dc-55cebd948638", "short_id": "1e9cd2c5", "orchestrator": "gerra", "prompt": "Create a page showing all the connected tauke workers, how many tokens available, history of the tasks, their statuses, who implemented, etc", "created_at": "2026-04-23T19:51:32.372446+00:00", "task_status": "pending", "worker": "bushaev", "claimed_at": "2026-04-23T19:51:58.944145+00:00", "final_status": null, "tokens_used": null, "summary": null, "error": null, "completed_at": null, "result_branch": null}, {"id": "74f93d1d-c59e-4f8e-96fb-8b3f3d5c6eca", "short_id": "74f93d1d", "orchestrator": "gerra", "prompt": "Create a page showing all the connected tauke workers, how many tokens available, history of the tasks, their statuses, who implemented, etc", "created_at": "2026-04-23T19:46:22.533909+00:00", "task_status": "pending", "worker": "bushaev", "claimed_at": "2026-04-23T19:46:35.455830+00:00", "final_status": "error", "tokens_used": 0, "summary": "Failed to authenticate. API Error: 403 permission_error — account no longer a member of the organization.", "error": "auth", "completed_at": "2026-04-23T19:46:39.413395+00:00", "result_branch": null}, {"id": "c60ae08b-5c2d-48be-bb51-55011606ea22", "short_id": "c60ae08b", "orchestrator": "gerra", "prompt": "Create a page showing all the connected tauke workers, how many tokens available, history of the tasks, their statuses, who implemented, etc", "created_at": "2026-04-23T19:44:12.552845+00:00", "task_status": "pending", "worker": "bushaev", "claimed_at": "2026-04-23T19:44:19.650733+00:00", "final_status": "error", "tokens_used": 0, "summary": "Failed to authenticate. API Error: 403 permission_error — account no longer a member of the organization.", "error": "auth", "completed_at": "2026-04-23T19:44:26.552845+00:00", "result_branch": null}, {"id": "f4357100-6861-4e9f-8475-9ebe95fcac0c", "short_id": "f4357100", "orchestrator": "gerra", "prompt": "Create a page showing all the connected tauke workers, how many tokens available, history of the tasks, their statuses, who implemented, etc", "created_at": "2026-04-23T19:34:28.546867+00:00", "task_status": "pending", "worker": "nikvorobiov", "claimed_at": "2026-04-23T19:34:44.380203+00:00", "final_status": "error", "tokens_used": 0, "summary": "git clone returned non-zero exit status 128.", "error": "clone", "completed_at": "2026-04-23T19:34:45.721384+00:00", "result_branch": null}, {"id": "09a82f48-2d79-487d-bdde-2e972ce5c079", "short_id": "09a82f48", "orchestrator": "gerra", "prompt": "Create a page showing all the connected tauke workers, how many tokens available, history of the tasks, their statuses, who implemented, etc", "created_at": "2026-04-23T19:29:25.083228+00:00", "task_status": "pending", "worker": "nikvorobiov", "claimed_at": "2026-04-23T19:33:06.136850+00:00", "final_status": "error", "tokens_used": 0, "summary": "git clone returned non-zero exit status 128.", "error": "clone", "completed_at": "2026-04-23T19:33:07.479541+00:00", "result_branch": null}, {"id": "a6192c2a-8d57-4943-a84f-d845e833c326", "short_id": "a6192c2a", "orchestrator": "gerra", "prompt": "Create a page showing all the connected tauke workers, how many tokens available, history of the tasks, their statuses, who implemented, etc", "created_at": "2026-04-23T13:30:28.751389+00:00", "task_status": "pending", "worker": "royalefarfalle", "claimed_at": "2026-04-23T13:30:52.581906+00:00", "final_status": "error", "tokens_used": 0, "summary": "git clone returned non-zero exit status 128.", "error": "clone", "completed_at": "2026-04-23T13:30:55.552244+00:00", "result_branch": null}, {"id": "97acf690-fa86-402c-b397-628cc67c3f19", "short_id": "97acf690", "orchestrator": "gerra", "prompt": "Create a page showing all the connected tauke workers, how many tokens available, history of the tasks, their statuses, who implemented, etc", "created_at": "2026-04-23T12:16:22.979818+00:00", "task_status": "pending", "worker": "royalefarfalle", "claimed_at": "2026-04-23T13:14:23.408223+00:00", "final_status": "error", "tokens_used": 0, "summary": "git clone returned non-zero exit status 128.", "error": "clone", "completed_at": "2026-04-23T13:14:25.764149+00:00", "result_branch": null}, {"id": "88286a74-bd79-46e8-a2ed-9e86d311596d", "short_id": "88286a74", "orchestrator": "gerra", "prompt": "make a simple hello world page", "created_at": "2026-04-23T10:32:43.637064+00:00", "task_status": "pending", "worker": "bushaev", "claimed_at": "2026-04-23T10:32:59.087928+00:00", "final_status": "completed", "tokens_used": 0, "summary": "Created index.html with a basic Hello World page. Open it in a browser to view.", "error": null, "completed_at": "2026-04-23T10:33:13.674060+00:00", "result_branch": "tauke/result-88286a74-bd79-46e8-a2ed-9e86d311596d"}, {"id": "f6af8bab-4176-4388-8b11-08164f03a01f", "short_id": "f6af8bab", "orchestrator": "gerra", "prompt": "make a simple hello world page", "created_at": "2026-04-23T10:24:57.593820+00:00", "task_status": "pending", "worker": "bushaev", "claimed_at": "2026-04-23T10:25:19.874044+00:00", "final_status": "completed", "tokens_used": 0, "summary": "Created index.html at the workspace root with a basic Hello World page — pending write approval.", "error": null, "completed_at": "2026-04-23T10:25:36.723912+00:00", "result_branch": null}, {"id": "073e17fa-e297-4ba6-b54f-5c558b84a4af", "short_id": "073e17fa", "orchestrator": "gerra", "prompt": "make a simple hello world page", "created_at": "2026-04-23T10:13:29.690853+00:00", "task_status": "pending", "worker": "bushaev", "claimed_at": "2026-04-23T10:19:09.261994+00:00", "final_status": "completed", "tokens_used": 0, "summary": "Needed write permission to create index.html.", "error": null, "completed_at": "2026-04-23T10:19:31.514295+00:00", "result_branch": null}, {"id": "bd33ff80-7dae-4b24-a689-20721b77b981", "short_id": "bd33ff80", "orchestrator": "gerra", "prompt": "make a simple hello world page", "created_at": "2026-04-23T10:08:39.891149+00:00", "task_status": "pending", "worker": "bushaev", "claimed_at": "2026-04-23T10:13:19.888701+00:00", "final_status": null, "tokens_used": null, "summary": null, "error": null, "completed_at": null, "result_branch": null}, {"id": "81b22ad6-5d66-485c-8233-cd3b8351d078", "short_id": "81b22ad6", "orchestrator": "gerra", "prompt": "implement a simple web page showing all the connected workers to tauke with their remaining tokens", "created_at": "2026-04-07T21:21:03.003340+00:00", "task_status": "pending", "worker": "bushaev", "claimed_at": "2026-04-23T10:09:29.110860+00:00", "final_status": null, "tokens_used": null, "summary": null, "error": null, "completed_at": null, "result_branch": null}]
+</script>
+
+<script>
+(() => {
+  const workers = JSON.parse(document.getElementById('workers-data').textContent);
+  const tasks   = JSON.parse(document.getElementById('tasks-data').textContent);
+
+  const snapshotEl = document.getElementById('snapshot');
+  const now = new Date();
+  snapshotEl.textContent = `snapshot · ${now.toISOString().replace('T', ' ').slice(0, 19)}Z`;
+
+  // ---------- Workers ----------
+  const grid = document.getElementById('worker-grid');
+  const nf   = new Intl.NumberFormat('en-US');
+
+  for (const w of workers) {
+    const used = w.tokens_used || 0;
+    const cap  = w.daily_cap || 0;
+    const pct  = cap > 0 ? Math.min(100, (used / cap) * 100) : 0;
+    const card = document.createElement('div');
+    card.className = 'worker ' + (w.status === 'online' ? 'online' : '');
+    card.innerHTML = `
+      <div class="worker-head">
+        <span class="worker-handle">${w.handle}</span>
+        <span class="status-chip ${w.status}">${w.status}</span>
+      </div>
+      <div class="worker-meta">last seen · ${w.last_seen}</div>
+      <div class="token-label">Tokens remaining today</div>
+      <div class="token-row">
+        <span class="big">${nf.format(w.remaining)}</span>
+        <span class="cap">/ ${nf.format(cap)}</span>
+      </div>
+      <div class="meter"><div class="fill" style="width:${pct}%"></div></div>
+      <div class="meter-legend">
+        <span>used ${nf.format(used)}</span>
+        <span>${pct.toFixed(0)}%</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+
+  const online = workers.filter(w => w.status === 'online').length;
+  const totalRemaining = workers.reduce((s,w) => s + (w.remaining || 0), 0);
+  document.getElementById('worker-meta').textContent =
+    `${online}/${workers.length} online · ${nf.format(totalRemaining)} tokens available`;
+
+  // ---------- Tasks ----------
+  const effectiveStatus = (t) => {
+    if (t.final_status) return t.final_status;
+    if (t.claimed_at)   return 'in_progress';
+    return t.task_status || 'pending';
+  };
+
+  const fmtTime = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    const diff = (now - d) / 1000;
+    if (diff < 60)      return `${Math.floor(diff)}s ago`;
+    if (diff < 3600)    return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400)   return `${Math.floor(diff/3600)}h ago`;
+    if (diff < 86400*30) return `${Math.floor(diff/86400)}d ago`;
+    return d.toISOString().slice(0, 10);
+  };
+
+  const statusLabel = {
+    completed:   'completed',
+    in_progress: 'in progress',
+    error:       'error',
+    pending:     'pending',
+  };
+
+  const tbody = document.getElementById('task-body');
+  const emptyEl = document.getElementById('empty');
+
+  const renderTasks = (filter) => {
+    tbody.innerHTML = '';
+    const rows = tasks.filter(t => filter === 'all' || effectiveStatus(t) === filter);
+    if (rows.length === 0) {
+      emptyEl.style.display = 'block';
+      return;
+    }
+    emptyEl.style.display = 'none';
+    for (const t of rows) {
+      const st = effectiveStatus(t);
+      const summary = t.summary
+        ? `<span class="summary ${t.error ? 'err' : ''}">${escapeHtml(t.summary)}</span>`
+        : '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="id">${t.short_id}</td>
+        <td><span class="pill ${st}">${statusLabel[st] || st}</span></td>
+        <td class="worker">${t.worker || '—'}</td>
+        <td class="prompt">${escapeHtml(t.prompt)}${summary}</td>
+        <td class="tokens">${t.tokens_used != null ? nf.format(t.tokens_used) : '—'}</td>
+        <td class="when">${fmtTime(t.created_at)}</td>
+        <td class="when">${fmtTime(t.completed_at)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  };
+
+  // Filters
+  const counts = { all: tasks.length };
+  for (const t of tasks) {
+    const s = effectiveStatus(t);
+    counts[s] = (counts[s] || 0) + 1;
+  }
+  const order = ['all', 'completed', 'in_progress', 'error', 'pending'];
+  const filtersEl = document.getElementById('filters');
+  for (const key of order) {
+    if (!(key in counts)) continue;
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (key === 'all' ? ' active' : '');
+    btn.dataset.filter = key;
+    btn.innerHTML = `${statusLabel[key] || key}<span class="filter-count">${counts[key]}</span>`;
+    btn.addEventListener('click', () => {
+      filtersEl.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTasks(key);
+    });
+    filtersEl.appendChild(btn);
+  }
+
+  document.getElementById('task-meta').textContent =
+    `${tasks.length} total · ${counts.completed || 0} completed · ${counts.error || 0} errored`;
+
+  renderTasks('all');
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
+})();
+</script>
+
 </body>
 </html>
