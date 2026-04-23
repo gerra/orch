@@ -1,0 +1,10 @@
+{
+  "task_id": "a6192c2a-8d57-4943-a84f-d845e833c326",
+  "worker": "royalefarfalle",
+  "status": "error",
+  "result_branch": null,
+  "tokens_used": 0,
+  "summary": "Command '['git', 'clone']' returned non-zero exit status 128.",
+  "completed_at": "2026-04-23T13:30:55.552244+00:00",
+  "error": "Command '['git', 'clone']' returned non-zero exit status 128."
+}
