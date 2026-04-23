@@ -1,0 +1,10 @@
+{
+  "task_id": "c60ae08b-5c2d-48be-bb51-55011606ea22",
+  "worker": "bushaev",
+  "status": "error",
+  "result_branch": null,
+  "tokens_used": 0,
+  "summary": "Failed to authenticate. API Error: 403 {\"type\":\"error\",\"error\":{\"type\":\"permission_error\",\"message\":\"Account is no longer a member of the organization associated with this token.\"},\"request_id\":\"req_0",
+  "completed_at": "2026-04-23T19:44:26.552845+00:00",
+  "error": ""
+}
