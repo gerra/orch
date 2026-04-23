@@ -1,0 +1,11 @@
+{
+  "id": "74f93d1d-c59e-4f8e-96fb-8b3f3d5c6eca",
+  "orchestrator": "gerra",
+  "repo": "git@github.com:gerra/orch.git",
+  "branch": "main",
+  "commit": "58954cbc96119f3a37d2ccdb82239a707aea435f",
+  "prompt": "Create a page showing all the connected tauke workers, how many tokens available, history of the tasks, their statuses, who implemented, etc",
+  "context_files": [],
+  "created_at": "2026-04-23T19:46:22.533909+00:00",
+  "status": "pending"
+}
